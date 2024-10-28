@@ -6,11 +6,11 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 
 #define  ID_AUDEZE_MAXWELL_WIRED       0x4b1a
 #define  ID_AUDEZE_MAXWELL_WIRELESS    0x4b19
-#define  TIMEOUT                       5000
 
 static struct device device_maxwell;
 static BatteryInfo audeze_maxwell_get_battery(hid_device* device_handle);
@@ -38,28 +38,32 @@ static BatteryInfo audeze_maxwell_get_battery(hid_device* device_handle)
 {
     BatteryInfo info = { .status = BATTERY_HIDERROR, .level = -1 };
 
-    /*uint8_t reset_report_request [62] = { 0x06, 0x08, 0x80, 0x05, 0x5a, 0x04, 0x00, 0x01, 0x09, 0x20};*/
-    /*int response_reset_report_request = hid_send_feature_report(device_handle,reset_report_request, sizeof(reset_report_request));*/
-    /**/
-    uint8_t request_report[62] = {0x06, 0x07, 0x00, 0x05, 0x5a, 0x03, 0x00, 0xd6, 0x0c};
-    int send_feature_response = hid_send_feature_report(device_handle, request_report, sizeof(request_report));
-    printf("Report Status: %d \n", send_feature_response);
-
-    uint8_t request_battery_status [62] = { 0x06, 0x08, 0x80, 0x05, 0x5a, 0x03, 0x00, 0xd6, 0x0c, 0x00};
+    uint8_t request_battery_status [63] = { 0x06, 0x08, 0x80, 0x05, 0x5a, 0x03, 0x00, 0xd6, 0x0c, 0x00};
     int response_request_battery = hid_send_feature_report(device_handle, request_battery_status, sizeof(request_battery_status));
-    
 
-    uint8_t data_request[62] = {0x07};
-    int response                  = hid_get_input_report(device_handle, data_request, 63);
-
-    printf("Get_Report_response: %d\n", response);
-
-    if(response < 0){
+    if(response_request_battery < 0){
         info.status = BATTERY_HIDERROR;
         return info;
     }
 
-    printf("Battery Status: %d \n", response);
+    uint8_t data_response[63] = {0x07};
+
+    int response = -1;
+
+    for (int i = 0; i <= 2 ; i++) {
+         response = hid_get_input_report(device_handle, data_response, 63);
+         usleep(5000);
+    }
+
+    printf("Get_Report_response: %d\n", response);
+
+    if(response < 0 ){
+        info.status = BATTERY_HIDERROR;
+        return info;
+    }
+
+    info.status = BATTERY_AVAILABLE;
+    info.level = (int)data_response[18];
 
     /*if (response == 0){*/
     /*    info.status = BATTERY_TIMEOUT;*/
@@ -84,10 +88,10 @@ static BatteryInfo audeze_maxwell_get_battery(hid_device* device_handle)
     /*printf("BATTERY INFO AUDEZE: ");*/
     /**/
     for(int i = 0; i < 62; i++) {
-        printf("%d %hhx ", i,data_request[i]);
+        printf("%d %hhx ", i,data_response[i]);
         printf("\n");
     } 
     /**/
     /**/
-    /*return  info;*/
+    return  info;
 }
