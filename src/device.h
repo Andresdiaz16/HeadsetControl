@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define VENDOR_AUDEZE      0x3329
 #define VENDOR_CORSAIR     0x1b1c
 #define VENDOR_LOGITECH    0x046d
 #define VENDOR_STEELSERIES 0x1038
