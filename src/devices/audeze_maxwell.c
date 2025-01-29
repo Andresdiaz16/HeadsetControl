@@ -39,23 +39,14 @@ static BatteryInfo audeze_maxwell_get_battery(hid_device* device_handle)
     BatteryInfo info = { .status = BATTERY_HIDERROR, .level = -1 };
 
     uint8_t request_battery_status [63] = { 0x06, 0x08, 0x80, 0x05, 0x5a, 0x03, 0x00, 0xd6, 0x0c, 0x00};
+
+    //request read report 7
+    uint8_t data_response[63] = {0x07}; 
+
     int response_request_battery = hid_send_feature_report(device_handle, request_battery_status, sizeof(request_battery_status));
+    hid_get_input_report(device_handle, data_response, 63);
 
-    if(response_request_battery < 0){
-        info.status = BATTERY_HIDERROR;
-        return info;
-    }
-
-    uint8_t data_response[63] = {0x07};
-
-    int response = -1;
-
-    for (int i = 0; i <= 2 ; i++) {
-         response = hid_get_input_report(device_handle, data_response, 63);
-         usleep(5000);
-    }
-
-    printf("Get_Report_response: %d\n", response);
+    int response = hid_get_input_report(device_handle, data_response, 63);
 
     if(response < 0 ){
         info.status = BATTERY_HIDERROR;
@@ -87,7 +78,7 @@ static BatteryInfo audeze_maxwell_get_battery(hid_device* device_handle)
     /**/
     /*printf("BATTERY INFO AUDEZE: ");*/
     /**/
-    for(int i = 0; i < 62; i++) {
+    for(int i = 0; i < 63; i++) {
         printf("%d %hhx ", i,data_response[i]);
         printf("\n");
     } 
